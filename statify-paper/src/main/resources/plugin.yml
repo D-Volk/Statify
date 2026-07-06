@@ -1,0 +1,19 @@
+name: Statify
+version: '${version}'
+main: ru.dvolk.statify.paper.StatifyPlugin
+api-version: '1.20'
+author: dvolk
+description: Учёт времени игры и плейсхолдеры (день/неделя/месяц/всего) с записью в MySQL/MariaDB.
+softdepend: [PlaceholderAPI]
+commands:
+  statify:
+    description: Управление плагином Statify
+    usage: /statify reload
+    permission: statify.command
+permissions:
+  statify.command:
+    description: Доступ к базовой команде /statify
+    default: true
+  statify.reload:
+    description: Перезагрузить конфиг
+    default: op

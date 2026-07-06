@@ -1,0 +1,16 @@
+# dirs
+.vscode
+fabric
+paper
+statify-fabric/.gradle
+statify-fabric/bin
+statify-fabric/gradle
+statify-paper/.gradle
+statify-paper/bin
+statify-paper/gradle
+
+# files
+statify-fabric/gradlew
+statify-fabric/gradlew.bat
+statify-paper/gradlew
+statify-paper/gradlew.bat

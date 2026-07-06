@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "statify",
+  "version": "${version}",
+  "name": "Statify",
+  "description": "Учёт времени игры и плейсхолдеры (день/неделя/месяц/всего) с записью в MySQL/MariaDB.",
+  "authors": ["dvolk"],
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "ru.dvolk.statify.fabric.StatifyMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "fabric-api": "*",
+    "minecraft": ">=1.21.8",
+    "java": ">=21"
+  },
+  "suggests": {
+    "placeholder-api": "*",
+    "fabric-permissions-api-v0": "*"
+  }
+}
