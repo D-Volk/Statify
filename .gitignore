@@ -2,7 +2,7 @@
 .vscode
 fabric
 paper
-velocity
+
 statify-fabric/.gradle
 statify-fabric/bin
 statify-fabric/gradle
