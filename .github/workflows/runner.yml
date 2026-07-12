@@ -27,6 +27,11 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
+    
+    - name: Setup Gradle 8.10
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      with:
+        gradle-version: '8.10'
   
   build-velocity:
     needs: [setup]
@@ -38,28 +43,24 @@ jobs:
       repository-projects: write
 
     steps:
-    - name: Setup Gradle 8.10
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-      with:
-        gradle-version: '8.10'
 
     - name: Setup Gradle Wrapper
-      run: gradle wrapper --gradle-version 8.10
-
-    - name: Build statify-velocity with Gradle Wrapper
       run: 
         cd statify-velocity
-        ./gradlew clean shadowJar
+        gradle wrapper --gradle-version 8.10
 
-    - name: Build statify-paper with Gradle Wrapper
-      run: 
-        cd statify-paper
-        ./gradlew clean shadowJar
+    - name: Build statify-velocity with Gradle Wrapper
+      run: ./gradlew clean shadowJar
 
-    - name: Build statify-fabric with Gradle Wrapper
-      run: 
-        cd statify-fabric
-        ./gradlew clean build
+    # - name: Build statify-paper with Gradle Wrapper
+    #   run: 
+    #     cd statify-paper
+    #     ./gradlew clean shadowJar
+
+    # - name: Build statify-fabric with Gradle Wrapper
+    #   run: 
+    #     cd statify-fabric
+    #     ./gradlew clean build
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Set build
