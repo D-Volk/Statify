@@ -2,7 +2,7 @@ name: Statify
 version: '${version}'
 main: ru.dvolk.statify.paper.StatifyPlugin
 api-version: '1.20'
-author: dvolk
+author: D-Volk
 description: Учёт времени игры и плейсхолдеры (день/неделя/месяц/всего) с записью в MySQL/MariaDB.
 softdepend: [PlaceholderAPI]
 commands:

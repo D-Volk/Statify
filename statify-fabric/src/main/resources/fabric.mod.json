@@ -4,7 +4,7 @@
   "version": "${version}",
   "name": "Statify",
   "description": "Учёт времени игры и плейсхолдеры (день/неделя/месяц/всего) с записью в MySQL/MariaDB.",
-  "authors": ["dvolk"],
+  "authors": ["D-Volk"],
   "license": "MIT",
   "environment": "server",
   "entrypoints": {
