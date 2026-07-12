@@ -29,6 +29,39 @@ dependencies {
     implementation("org.yaml:snakeyaml:2.2")
 }
 
+// Генерируем BuildConstants.java с версией из project.version,
+// чтобы @Plugin(version = BuildConstants.VERSION) не расходился с build.gradle.kts.
+val generatedSourcesDir = layout.buildDirectory.dir("generated/sources/version/java/main")
+
+val generateBuildConstants by tasks.registering {
+    val outputDir = generatedSourcesDir
+    val versionValue = project.version.toString()
+    inputs.property("version", versionValue)
+    outputs.dir(outputDir)
+    doLast {
+        val pkg = outputDir.get().dir("ru/dvolk/statify/velocity").asFile
+        pkg.mkdirs()
+        pkg.resolve("BuildConstants.java").writeText(
+            """
+            package ru.dvolk.statify.velocity;
+
+            public final class BuildConstants {
+                public static final String VERSION = "$versionValue";
+                private BuildConstants() {}
+            }
+            """.trimIndent()
+        )
+    }
+}
+
+sourceSets.named("main") {
+    java.srcDir(generatedSourcesDir)
+}
+
+tasks.named("compileJava") {
+    dependsOn(generateBuildConstants)
+}
+
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(17)
