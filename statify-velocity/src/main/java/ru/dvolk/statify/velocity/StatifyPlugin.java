@@ -19,13 +19,13 @@ import java.nio.file.Path;
 @Plugin(
         id = "statify",
         name = "Statify",
-        version = "1.0.0",
+        version = BuildConstants.VERSION,
         description = "Sticky-connect для Velocity: возвращает игрока на последний сервер.",
-        authors = {"dvolk"}
+        authors = {"D-Volk"}
 )
 public final class StatifyPlugin {
 
-    public static final String PLUGIN_VERSION = "1.0.0";
+    public static final String PLUGIN_VERSION = BuildConstants.VERSION;
 
     private final ProxyServer proxy;
     private final Logger logger;
