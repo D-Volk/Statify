@@ -48,10 +48,15 @@ jobs:
         gradle wrapper --gradle-version 8.10
         ./gradlew clean shadowJar
 
+    - name: Setup Gradle 8.12 for Fabric
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      with:
+        gradle-version: '8.12'
+
     - name: Build statify-fabric with Gradle Wrapper
       working-directory: statify-fabric
       run: |
-        gradle wrapper --gradle-version 8.10
+        gradle wrapper --gradle-version 8.12
         ./gradlew clean build
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
