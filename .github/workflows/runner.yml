@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  setup:
+  build:
 
     runs-on: ubuntu-latest
     permissions:
@@ -32,45 +32,34 @@ jobs:
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
       with:
         gradle-version: '8.10'
-  
-  build-velocity:
-    needs: [setup]
 
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
+    # - name: Setup Gradle Wrapper
+    #   run: gradle wrapper --gradle-version 8.10
 
-    steps:
+    - name: Build statify-velocity with Gradle Wrapper
+      working-directory: statify-velocity
+      run: |
+        gradle wrapper --gradle-version 8.10
+        ./gradlew clean shadowJar
 
-    - name: Checkout
-      run: ls
+    - name: Build statify-paper with Gradle Wrapper
+      working-directory: statify-paper
+      run: |
+        gradle wrapper --gradle-version 8.10
+        ./gradlew clean shadowJar
 
-  #   - name: Setup Gradle Wrapper
-  #     working-directory: statify-velocity
-  #     run: gradle wrapper --gradle-version 8.10
-
-  #   - name: Build statify-velocity with Gradle Wrapper
-  #     working-directory: statify-velocity
-  #     run: ./gradlew clean shadowJar
-
-    # - name: Build statify-paper with Gradle Wrapper
-    #   run: 
-    #     cd statify-paper
-    #     ./gradlew clean shadowJar
-
-    # - name: Build statify-fabric with Gradle Wrapper
-    #   run: 
-    #     cd statify-fabric
-    #     ./gradlew clean build
+    - name: Build statify-fabric with Gradle Wrapper
+      working-directory: statify-fabric
+      run: |
+        gradle wrapper --gradle-version 8.10
+        ./gradlew clean build
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    # - name: Set build
-    #   uses: actions/upload-artifact@v7
-    #   with:
-    #     name: Statify
-    #     path: 
-    #       statify-velocity/build/libs/*.jar
-    #       statify-paper/build/libs/*.jar
-    #       statify-fabric/build/libs/*.jar
+    - name: Set build
+      uses: actions/upload-artifact@v7
+      with:
+        name: Statify
+        path: 
+          statify-velocity/build/libs/*.jar
+          statify-paper/build/libs/*.jar
+          statify-fabric/build/libs/*.jar
