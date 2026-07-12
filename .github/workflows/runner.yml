@@ -64,7 +64,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Statify
-        path: 
+        path: |
           statify-velocity/build/libs/*.jar
           statify-paper/build/libs/*.jar
           statify-fabric/build/libs/*.jar
