@@ -19,38 +19,41 @@ jobs:
     steps:
     - run: echo "Процесс запущен вручную! Build - ${{ github.event.inputs.build}}"
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - name: Checkout
+      run: ls
+
+    # - name: Checkout repository
+    #   uses: actions/checkout@v4
     
-    - name: Setup JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+    # - name: Setup JDK 21
+    #   uses: actions/setup-java@v4
+    #   with:
+    #     java-version: '21'
+    #     distribution: 'temurin'
     
-    - name: Setup Gradle 8.10
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-      with:
-        gradle-version: '8.10'
+    # - name: Setup Gradle 8.10
+    #   uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+    #   with:
+    #     gradle-version: '8.10'
   
-  build-velocity:
-    needs: [setup]
+  # build-velocity:
+  #   needs: [setup]
 
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pull-requests: write
+  #     repository-projects: write
 
-    steps:
+  #   steps:
 
-    - name: Setup Gradle Wrapper
-      working-directory: statify-velocity
-      run: gradle wrapper --gradle-version 8.10
+  #   - name: Setup Gradle Wrapper
+  #     working-directory: statify-velocity
+  #     run: gradle wrapper --gradle-version 8.10
 
-    - name: Build statify-velocity with Gradle Wrapper
-      working-directory: statify-velocity
-      run: ./gradlew clean shadowJar
+  #   - name: Build statify-velocity with Gradle Wrapper
+  #     working-directory: statify-velocity
+  #     run: ./gradlew clean shadowJar
 
     # - name: Build statify-paper with Gradle Wrapper
     #   run: 
@@ -63,11 +66,11 @@ jobs:
     #     ./gradlew clean build
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    - name: Set build
-      uses: actions/upload-artifact@v7
-      with:
-        name: Statify
-        path: 
-          statify-velocity/build/libs/*.jar
-          statify-paper/build/libs/*.jar
-          statify-fabric/build/libs/*.jar
+    # - name: Set build
+    #   uses: actions/upload-artifact@v7
+    #   with:
+    #     name: Statify
+    #     path: 
+    #       statify-velocity/build/libs/*.jar
+    #       statify-paper/build/libs/*.jar
+    #       statify-fabric/build/libs/*.jar
