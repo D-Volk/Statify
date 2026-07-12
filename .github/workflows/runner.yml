@@ -45,11 +45,11 @@ jobs:
     steps:
 
     - name: Setup Gradle Wrapper
-      working-directory: ./statify-velocity
+      working-directory: statify-velocity
       run: gradle wrapper --gradle-version 8.10
 
     - name: Build statify-velocity with Gradle Wrapper
-      working-directory: ./statify-velocity
+      working-directory: statify-velocity
       run: ./gradlew clean shadowJar
 
     # - name: Build statify-paper with Gradle Wrapper
