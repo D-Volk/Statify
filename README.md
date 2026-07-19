@@ -1,38 +1,63 @@
 # Statify
 
-Учёт игрового времени на Minecraft-сервере с записью в MySQL/MariaDB и набором плейсхолдеров: имя, UUID, всего / за день / за неделю / за месяц.
+Учёт игрового времени на Minecraft-сервере с записью в MySQL/MariaDB и набором плейсхолдеров: имя, UUID, IP, всего / за день / за неделю / за месяц.
 
-Три независимых модуля с общей БД и общей схемой:
+Четыре независимых модуля с общей БД и общей схемой:
 
-- `statify-paper` — плагин под **Paper 1.20.4** и **1.21.x**. Интеграция с PlaceholderAPI.
-- `statify-fabric` — мод под **Fabric 1.21.8** (loader 0.17.2, api 0.136.1). Интеграция с [Text Placeholder API](https://placeholders.pb4.eu/) от pb4.
-- `statify-velocity` — плагин под **Velocity 3.3.x**. Игровое время не считает: только «липкий» коннект — возвращает игрока на тот сервер, где он был перед выходом. Использует общую таблицу `statify_players` (расширяется колонкой `last_server`).
+- `statify-paper` — плагин под **Paper 1.20.4** и **1.21.x**. Интеграция с PlaceholderAPI. Java 21.
+- `statify-fabric` — мод под **Fabric 1.21.8** (loader 0.17.2, api 0.136.1). Интеграция с [Text Placeholder API](https://placeholders.pb4.eu/) от pb4. Java 21.
+- `statify-forge` — мод под **Forge 1.20.1** (47.3.11). Плейсхолдеров нет (у Forge 1.20.1 нет мода с совместимым API). Java 17.
+- `statify-velocity` — плагин под **Velocity 3.3.x**. Игровое время не считает: только «липкий» коннект — возвращает игрока на тот сервер, где он был перед выходом. Использует общую таблицу `statify_players` (расширяется колонками `last_server`). Java 17.
 
 ## Сборка
 
-Требуется JDK 21.
+Paper/Fabric требуют JDK 21, Forge и Velocity — JDK 17 (Gradle сам подтянет toolchain, но для host-JVM ставьте нужную версию).
+
+### Инициализация gradle wrapper
+
+Файлы `gradlew`, `gradlew.bat` и папка `gradle/wrapper/` не хранятся в репозитории (см. [.gitignore](.gitignore)) — после свежего клона их нужно сгенерировать. Понадобится установленный локально Gradle (`gradle --version`; если нет — поставьте через [Gradle install](https://gradle.org/install/), sdkman или пакетный менеджер).
+
+```bash
+# Paper и Velocity — Gradle 8.10, Fabric — 8.12, Forge — 8.10 (совместим с ForgeGradle 6).
+# Версию можно уточнить в build.gradle.kts / gradle-wrapper.properties референсного модуля.
+
+cd statify-paper && gradle wrapper --gradle-version 8.10 && cd ..
+cd statify-fabric && gradle wrapper --gradle-version 8.12 && cd ..
+cd statify-forge && gradle wrapper --gradle-version 8.10 && cd ..
+cd statify-velocity && gradle wrapper --gradle-version 8.10 && cd ..
+```
+
+После этого в каждом модуле появятся `gradlew`, `gradlew.bat` и `gradle/wrapper/`. Ниже — команды сборки.
+
+### Сборка модулей
 
 ```bash
 # Paper
 cd statify-paper
 ./gradlew shadowJar
-# → build/libs/statify-paper-1.0.0.jar
+# → build/libs/statify-paper-1.0.1.jar
 
 # Fabric
 cd statify-fabric
 ./gradlew build
-# → build/libs/statify-fabric-1.0.0.jar
+# → build/libs/statify-fabric-1.0.1.jar
+
+# Forge
+cd statify-forge
+./gradlew build
+# → build/libs/statify-forge-1.0.1.jar
 
 # Velocity
 cd statify-velocity
 ./gradlew shadowJar
-# → build/libs/statify-velocity-1.0.0.jar
+# → build/libs/statify-velocity-1.0.1.jar
 ```
 
 ## Установка
 
 - Paper: положить jar в [paper/plugins](paper/plugins), сервер стартовать один раз (создастся `plugins/Statify/config.yml`), заполнить БД, перезапустить.
 - Fabric: положить jar в [fabric/mods](fabric/mods), сервер стартовать один раз (создастся `config/statify/config.yml`), заполнить БД, перезапустить.
+- Forge: положить jar в папку `mods/` форджового сервера, стартовать (создастся `config/statify/config.yml`), заполнить БД, перезапустить.
 - Velocity: положить jar в [velocity/plugins](velocity/plugins), прокси стартовать один раз (создастся `plugins/statify/config.yml`), заполнить БД, перезапустить.
 
 По умолчанию `database.type: none` — плагин/мод при этом выводит warn и отключается.
@@ -42,7 +67,7 @@ cd statify-velocity
 `config-version` совпадает с версией плагина. При апгрейде плагина старый `config.yml` автоматически переименовывается в `config.old.<старая-версия>.yml`, а на его месте создаётся свежий.
 
 ```yaml
-config-version: '1.0.0'
+config-version: '1.0.1'
 server-name: 'lobby'
 
 database:
@@ -87,8 +112,11 @@ format: { suffix-day: ':', suffix-hour: ':', suffix-minute: ':', suffix-second: 
 
 Создаётся автоматически:
 
-- `statify_players (uuid, name, last_seen, last_server)` — актуальное имя игрока по UUID. Колонка `last_server` заполняется только при использовании `statify-velocity` — paper/fabric её игнорируют. Если таблица уже создана paper/fabric, velocity сам добавит `last_server` через `ALTER TABLE`.
-- `statify_daily (server, uuid, day, seconds)` — накопленные секунды по дню и серверу. Используется paper/fabric. Velocity её не трогает.
+- `statify_players (uuid, name, last_seen, last_ip, last_server)` — актуальные данные игрока по UUID.
+  - `last_ip` пишут Paper / Fabric / Forge / Velocity при подключении игрока (IPv4 или IPv6, до 45 символов).
+  - `last_server` заполняет только `statify-velocity` — Paper/Fabric/Forge её игнорируют.
+  - Если таблица создана более старой версией — недостающие колонки добавляются через `ALTER TABLE ADD COLUMN`, попытка игнорируется с MySQL/MariaDB error code 1060.
+- `statify_daily (server, uuid, day, seconds)` — накопленные секунды по дню и серверу. Используется Paper/Fabric/Forge. Velocity её не трогает.
 
 Суммы за неделю/месяц/всё — агрегаты по `statify_daily`.
 
@@ -100,6 +128,7 @@ format: { suffix-day: ':', suffix-hour: ':', suffix-minute: ':', suffix-second: 
 | --- | --- |
 | `%statify_name%` | имя игрока |
 | `%statify_uuid%` | UUID игрока |
+| `%statify_ip%` | последний IP игрока из БД (пусто, если ещё не записан) |
 | `%statify_server%` | имя локального сервера из конфига |
 | `%statify_total%` | всё время на текущем сервере (`Xh Ym Zs`) |
 | `%statify_day%` / `_week%` / `_month%` | за сегодня / текущую неделю / текущий месяц |
@@ -130,7 +159,9 @@ format: { suffix-day: ':', suffix-hour: ':', suffix-minute: ':', suffix-second: 
 
 ### Fabric (Text Placeholder API)
 
-Базовые: `%statify:name%`, `%statify:uuid%`, `%statify:server%`, `%statify:total%`, `%statify:day%`, `%statify:week%`, `%statify:month%`.
+Базовые: `%statify:name%`, `%statify:uuid%`, `%statify:ip%`, `%statify:server%`, `%statify:total%`, `%statify:day%`, `%statify:week%`, `%statify:month%`.
+
+`ip` — последний IP игрока из `statify_players.last_ip`. Значение кэшируется на 5 секунд.
 
 Кросс-серверные — через аргумент после `/`:
 
@@ -148,9 +179,13 @@ format: { suffix-day: ':', suffix-hour: ':', suffix-minute: ':', suffix-second: 
 
 Результаты обычных плейсхолдеров кешируются на 5 секунд, «текущая» секунда прибавляется из памяти — счётчики растут в реальном времени (только для локального сервера).
 
+### Forge
+
+Плейсхолдеров нет. В экосистеме Forge 1.20.1 нет мода, совместимого по API с `eu.pb4:placeholder-api` (он fabric-only), а альтернатив с той же семантикой не нашлось. Класс `StatifyPlaceholders` в моде сохранён как no-op, поэтому если появится подходящий placeholder-мод — интеграцию можно вернуть без правок остальной логики.
+
 ## Velocity: sticky-connect
 
-`statify-velocity` не считает время и не регистрирует плейсхолдеров — он только запоминает, на каком сервере игрок был в последний раз, и при следующем входе перекидывает его туда же.
+`statify-velocity` не считает время и не регистрирует плейсхолдеров — он только запоминает, на каком сервере игрок был в последний раз, и при следующем входе перекидывает его туда же. Также на определённые версии подключаемые клиенты отправляет на нужный сервер. В случае невозможсти подключится, возвращает подключение с `velocity`
 
 Отдельный конфиг `plugins/statify/config.yml`:
 
@@ -178,13 +213,14 @@ redirect:
 
 ## Команды
 
-Paper/Fabric — `/statify reload`: перечитать конфиг без пересоздания подключения к БД. Применяются `server-name`, `flush-interval-minutes`, вся секция `format`. При смене имени сервера накопленное время текущих сессий предварительно сбрасывается в БД под старым именем, затем переключается на новое.
+Paper/Fabric/Forge — `/statify reload`: перечитать конфиг без пересоздания подключения к БД. Применяются `server-name`, `flush-interval-minutes`, вся секция `format`. При смене имени сервера накопленное время текущих сессий предварительно сбрасывается в БД под старым именем, затем переключается на новое.
 
-Velocity — `/statify <reload|look|forget>`:
+Velocity — `/statify <reload|look|forget|set>`:
 
 - `reload` — перечитать `config.yml` (без переподключения к БД).
-- `look <player>` — показать `last_server` игрока (игрок должен быть онлайн, ключ в таблице — UUID).
-- `forget <player>` — обнулить `last_server` (следующий вход пойдёт через штатный `try:`).
+- `look <player>` — показать `last_server` игрока. Работает с оффлайном: UUID сначала ищется в онлайн-списке Velocity, затем в `statify_players.name` (case-insensitive).
+- `forget <player>` — обнулить `last_server` (следующий вход пойдёт через штатный `try:`). Тоже работает с оффлайном. Меняет только колонку `last_server` — `last_seen`, `last_ip`, `name` не трогаются.
+- `set <player> <server>` — принудительно установить `last_server` для игрока. Сервер должен быть зарегистрирован в Velocity, иначе команда откажет. Требует, чтобы у игрока уже была строка в БД (то есть он хоть раз входил через прокси).
 
 Для смены `database.*` нужен полный перезапуск сервера/прокси.
 
@@ -193,6 +229,8 @@ Velocity — `/statify <reload|look|forget>`:
 Paper: пермишен `statify.reload` (по умолчанию OP). Настраивается через LuckPerms и любые plugins с bukkit permissions.
 
 Fabric: пермишен-нода `statify.command.reload`. Проверяется через [fabric-permissions-api](https://github.com/lucko/fabric-permissions-api). Если permissions-мод не установлен — fallback на op level 3.
+
+Forge: `/statify reload` требует op level 3. Отдельного permissions-API у Forge 1.20.1 нет.
 
 Velocity: пермишен `statify.admin` (проверяется штатным `CommandSource#hasPermission`; в базовой Velocity консоль всегда получает `true`, для игроков подключается любой permissions-плагин — LuckPerms-velocity и т.п.).
 
