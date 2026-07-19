@@ -105,6 +105,40 @@ public final class Database {
         }
     }
 
+    /**
+     * Меняет только last_server игрока. Не трогает last_seen, last_ip, name.
+     * Используется командами /statify set и /statify forget для оффлайн-игроков.
+     * Возвращает true, если запись обновилась (строка с таким UUID существовала).
+     */
+    public boolean updateLastServerOnly(UUID uuid, String server) throws SQLException {
+        String sql = "UPDATE statify_players SET last_server=? WHERE uuid=?";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, server);
+            ps.setString(2, uuid.toString());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ищет UUID по имени игрока (case-insensitive). Нужно, чтобы команды
+     * могли работать с оффлайн-игроками — в статусе Velocity их нет,
+     * но в statify_players имя записано после последнего входа.
+     */
+    public Optional<UUID> findUuidByName(String name) throws SQLException {
+        String sql = "SELECT uuid FROM statify_players WHERE LOWER(name)=LOWER(?) LIMIT 1";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return Optional.empty();
+                try {
+                    return Optional.of(UUID.fromString(rs.getString(1)));
+                } catch (IllegalArgumentException ex) {
+                    return Optional.empty();
+                }
+            }
+        }
+    }
+
     public Optional<String> getLastServer(UUID uuid) throws SQLException {
         String sql = "SELECT last_server FROM statify_players WHERE uuid=?";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {

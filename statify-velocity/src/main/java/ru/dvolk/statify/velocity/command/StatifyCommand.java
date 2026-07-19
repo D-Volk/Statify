@@ -7,6 +7,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -15,6 +16,7 @@ import ru.dvolk.statify.velocity.StatifyPlugin;
 import ru.dvolk.statify.velocity.db.Database;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public final class StatifyCommand {
 
@@ -33,7 +35,7 @@ public final class StatifyCommand {
         return LiteralArgumentBuilder.<CommandSource>literal("statify")
                 .requires(src -> src.hasPermission(PERMISSION))
                 .executes(ctx -> {
-                    send(ctx.getSource(), "§eИспользование: /statify <reload|look|forget> …");
+                    send(ctx.getSource(), "§eИспользование: /statify <reload|look|forget|set> …");
                     return 1;
                 })
                 .then(LiteralArgumentBuilder.<CommandSource>literal("reload")
@@ -60,19 +62,28 @@ public final class StatifyCommand {
                                     String name = StringArgumentType.getString(ctx, "player");
                                     handleForget(plugin, proxy, database, ctx.getSource(), name);
                                     return 1;
-                                })));
+                                })))
+                .then(LiteralArgumentBuilder.<CommandSource>literal("set")
+                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("server", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            String name = StringArgumentType.getString(ctx, "player");
+                                            String server = StringArgumentType.getString(ctx, "server");
+                                            handleSet(plugin, proxy, database, ctx.getSource(), name, server);
+                                            return 1;
+                                        }))));
     }
 
     private static void handleLook(StatifyPlugin plugin, ProxyServer proxy, Database database,
                                     CommandSource source, String playerName) {
         proxy.getScheduler().buildTask(plugin, () -> {
-            Optional<com.velocitypowered.api.proxy.Player> op = proxy.getPlayer(playerName);
-            if (op.isEmpty()) {
-                send(source, "§cИгрок " + playerName + " не в сети — по имени спросить у БД нельзя (в таблице ключ — UUID).");
-                return;
-            }
             try {
-                Optional<String> last = database.getLastServer(op.get().getUniqueId());
+                UUID uuid = resolveUuid(proxy, database, playerName);
+                if (uuid == null) {
+                    send(source, "§cИгрок §f" + playerName + "§c не найден ни в онлайне, ни в БД.");
+                    return;
+                }
+                Optional<String> last = database.getLastServer(uuid);
                 if (last.isPresent()) {
                     send(source, "§7Последний сервер §f" + playerName + "§7: §a" + last.get());
                 } else {
@@ -87,19 +98,57 @@ public final class StatifyCommand {
     private static void handleForget(StatifyPlugin plugin, ProxyServer proxy, Database database,
                                       CommandSource source, String playerName) {
         proxy.getScheduler().buildTask(plugin, () -> {
-            Optional<com.velocitypowered.api.proxy.Player> op = proxy.getPlayer(playerName);
-            if (op.isEmpty()) {
-                send(source, "§cИгрок " + playerName + " не в сети — используйте команду когда он подключён.");
-                return;
-            }
             try {
-                // Пишем пустую строку как last_server. Логика редиректа игнорирует null/empty.
-                database.setLastServer(op.get().getUniqueId(), op.get().getUsername(), "", null);
-                send(source, "§aЗаписи last_server для " + playerName + " сброшены.");
+                UUID uuid = resolveUuid(proxy, database, playerName);
+                if (uuid == null) {
+                    send(source, "§cИгрок §f" + playerName + "§c не найден ни в онлайне, ни в БД.");
+                    return;
+                }
+                boolean updated = database.updateLastServerOnly(uuid, null);
+                if (updated) {
+                    send(source, "§aЗапись last_server для §f" + playerName + "§a сброшена.");
+                } else {
+                    send(source, "§7Запись last_server для §f" + playerName + "§7 не найдена.");
+                }
             } catch (Exception ex) {
                 send(source, "§cОшибка: " + ex.getMessage());
             }
         }).schedule();
+    }
+
+    private static void handleSet(StatifyPlugin plugin, ProxyServer proxy, Database database,
+                                   CommandSource source, String playerName, String serverName) {
+        proxy.getScheduler().buildTask(plugin, () -> {
+            if (proxy.getServer(serverName).isEmpty()) {
+                send(source, "§cСервер §f" + serverName + "§c не зарегистрирован в Velocity.");
+                return;
+            }
+            try {
+                UUID uuid = resolveUuid(proxy, database, playerName);
+                if (uuid == null) {
+                    send(source, "§cИгрок §f" + playerName + "§c не найден ни в онлайне, ни в БД.");
+                    return;
+                }
+                boolean updated = database.updateLastServerOnly(uuid, serverName);
+                if (updated) {
+                    send(source, "§aДля §f" + playerName + "§a установлен last_server: §e" + serverName);
+                } else {
+                    send(source, "§cДля §f" + playerName + "§c нет строки в БД — сначала он должен войти хоть раз.");
+                }
+            } catch (Exception ex) {
+                send(source, "§cОшибка: " + ex.getMessage());
+            }
+        }).schedule();
+    }
+
+    /**
+     * Ищет UUID сначала среди онлайн-игроков (свежее имя), потом в БД (по last-seen name).
+     * Возвращает null, если не найден нигде.
+     */
+    private static UUID resolveUuid(ProxyServer proxy, Database database, String playerName) throws java.sql.SQLException {
+        Optional<Player> op = proxy.getPlayer(playerName);
+        if (op.isPresent()) return op.get().getUniqueId();
+        return database.findUuidByName(playerName).orElse(null);
     }
 
     private static void send(CommandSource src, String msg) {
