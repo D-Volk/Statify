@@ -1,25 +1,32 @@
 # dirs
 .vscode
-fabric
-paper
+/fabric
+/paper
+/velocity
 
-statify-fabric/.gradle
-statify-fabric/bin
-statify-fabric/gradle
-statify-fabric/build
-statify-paper/.gradle
-statify-paper/bin
-statify-paper/gradle
-statify-paper/build
-statify-velocity/.gradle
-statify-velocity/bin
-statify-velocity/gradle
-statify-velocity/build
+/statify-fabric/.gradle
+/statify-fabric/bin
+/statify-fabric/gradle
+/statify-fabric/build
+/statify-forge/.gradle
+/statify-forge/bin
+/statify-forge/gradle
+/statify-forge/build
+/statify-paper/.gradle
+/statify-paper/bin
+/statify-paper/gradle
+/statify-paper/build
+/statify-velocity/.gradle
+/statify-velocity/bin
+/statify-velocity/gradle
+/statify-velocity/build
 
 # files
-statify-fabric/gradlew
-statify-fabric/gradlew.bat
-statify-paper/gradlew
-statify-paper/gradlew.bat
-statify-velocity/gradlew
-statify-velocity/gradlew.bat
+/statify-fabric/gradlew
+/statify-fabric/gradlew.bat
+/statify-forge/gradlew
+/statify-forge/gradlew.bat
+/statify-paper/gradlew
+/statify-paper/gradlew.bat
+/statify-velocity/gradlew
+/statify-velocity/gradlew.bat
