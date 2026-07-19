@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="statify"
+version="${version}"
+displayName="Statify"
+authors="dvolk"
+description='''
+Учёт времени игры и плейсхолдеры (день/неделя/месяц/всего) с записью в MySQL/MariaDB.
+'''
+
+[[dependencies.statify]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="SERVER"
+
+[[dependencies.statify]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="SERVER"
+

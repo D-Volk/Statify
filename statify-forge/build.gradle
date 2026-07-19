@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'ru.dvolk'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    withSourcesJar()
+}
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    copyIdeResources = true
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+configurations {
+    shade
+    implementation.extendsFrom shade
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.3.11'
+
+    // Shaded runtime deps
+    shade 'com.zaxxer:HikariCP:5.1.0'
+    shade 'org.mariadb.jdbc:mariadb-java-client:3.3.3'
+    shade 'com.mysql:mysql-connector-j:8.4.0'
+    shade 'org.yaml:snakeyaml:2.2'
+    shade 'org.slf4j:slf4j-api:2.0.13'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+tasks.processResources {
+    inputs.property 'version', project.version
+    filesMatching('META-INF/mods.toml') {
+        expand 'version': project.version
+    }
+}
+
+tasks.jar {
+    manifest {
+        attributes([
+                'Specification-Title'     : 'statify',
+                'Specification-Vendor'    : 'dvolk',
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : 'Statify',
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : 'dvolk',
+        ])
+    }
+    archiveClassifier = 'slim'
+}
+
+tasks.shadowJar {
+    archiveClassifier = ''
+    configurations = [project.configurations.shade]
+    def shadeBase = 'ru.dvolk.statify.forge.libs'
+    relocate 'com.zaxxer.hikari', "${shadeBase}.hikari"
+    relocate 'org.mariadb.jdbc', "${shadeBase}.mariadb"
+    relocate 'com.mysql', "${shadeBase}.mysql"
+    relocate 'com.google.protobuf', "${shadeBase}.protobuf"
+    relocate 'org.yaml.snakeyaml', "${shadeBase}.snakeyaml"
+    finalizedBy 'reobfShadowJar'
+}
+
+reobf {
+    shadowJar {}
+}
+
+tasks.build {
+    dependsOn tasks.shadowJar
+}
