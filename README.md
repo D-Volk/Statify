@@ -6,7 +6,7 @@
 
 - `statify-paper` — плагин под **Paper 1.20.4** и **1.21.x**. Интеграция с PlaceholderAPI. Java 21.
 - `statify-fabric` — мод под **Fabric 1.21.8** (loader 0.17.2, api 0.136.1). Интеграция с [Text Placeholder API](https://placeholders.pb4.eu/) от pb4. Java 21.
-- `statify-forge` — мод под **Forge 1.20.1** (47.3.11). Плейсхолдеров нет (у Forge 1.20.1 нет мода с совместимым API). Java 17.
+- `statify-forge` — мод под **Forge 1.20.1** (47.4.10). Плейсхолдеров нет (у Forge 1.20.1 нет мода с совместимым API). Java 17.
 - `statify-velocity` — плагин под **Velocity 3.3.x**. Игровое время не считает: только «липкий» коннект — возвращает игрока на тот сервер, где он был перед выходом. Использует общую таблицу `statify_players` (расширяется колонками `last_server`). Java 17.
 
 ## Сборка
