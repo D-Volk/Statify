@@ -113,6 +113,17 @@ public final class Database {
         }
     }
 
+    public String getLastIp(UUID uuid) throws SQLException {
+        String sql = "SELECT last_ip FROM statify_players WHERE uuid=?";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return rs.getString(1);
+            }
+        }
+    }
+
     public void addPlaytime(String server, UUID uuid, LocalDate day, long seconds) throws SQLException {
         if (seconds <= 0) return;
         String sql = "INSERT INTO statify_daily(server, uuid, day, seconds) VALUES(?,?,?,?) "

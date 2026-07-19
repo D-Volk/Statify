@@ -21,6 +21,7 @@ public final class StatifyPlaceholders {
     private static final int TOP_LIMIT = 20;
     private static final ConcurrentHashMap<String, CachedValue> CACHE = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, CachedTop> TOP_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, CachedIp> IP_CACHE = new ConcurrentHashMap<>();
 
     private static volatile String LOCAL_SERVER = "";
     private static volatile DurationFormat FORMAT;
@@ -32,6 +33,33 @@ public final class StatifyPlaceholders {
         FORMAT = df;
         CACHE.clear();
         TOP_CACHE.clear();
+        IP_CACHE.clear();
+    }
+
+    private static String resolveIp(Database database, UUID id) {
+        long now = System.currentTimeMillis();
+        CachedIp c = IP_CACHE.get(id);
+        if (c != null && now - c.timestamp < CACHE_TTL_MS) {
+            return c.value == null ? "" : c.value;
+        }
+        try {
+            String ip = database.getLastIp(id);
+            IP_CACHE.put(id, new CachedIp(ip, now));
+            return ip == null ? "" : ip;
+        } catch (SQLException ex) {
+            StatifyMod.LOGGER.warn("Statify: ip query failed for {}", id, ex);
+            return c == null ? "" : (c.value == null ? "" : c.value);
+        }
+    }
+
+    private static final class CachedIp {
+        final String value;
+        final long timestamp;
+
+        CachedIp(String value, long timestamp) {
+            this.value = value;
+            this.timestamp = timestamp;
+        }
     }
 
     public static void register(PlaytimeTracker tracker, Database database, String localServer, DurationFormat df) {
@@ -45,6 +73,11 @@ public final class StatifyPlaceholders {
             return p == null ? PlaceholderResult.invalid() : PlaceholderResult.value(p.getUuidAsString());
         });
         Placeholders.register(Identifier.of(StatifyMod.MOD_ID, "server"), (ctx, arg) -> PlaceholderResult.value(LOCAL_SERVER));
+        Placeholders.register(Identifier.of(StatifyMod.MOD_ID, "ip"), (ctx, arg) -> {
+            ServerPlayerEntity p = ctx.player();
+            if (p == null) return PlaceholderResult.invalid();
+            return PlaceholderResult.value(resolveIp(database, p.getUuid()));
+        });
 
         registerMetric("total", tracker, database, (db, srv, id) -> db.getTotalSeconds(srv, id));
         registerMetric("day",   tracker, database, (db, srv, id) -> db.getSecondsForDay(srv, id, Database.today()));

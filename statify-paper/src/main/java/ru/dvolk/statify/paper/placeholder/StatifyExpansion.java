@@ -42,6 +42,7 @@ public final class StatifyExpansion extends PlaceholderExpansion {
         this.durationFormat = durationFormat;
         cache.clear();
         topCache.clear();
+        ipCache.clear();
     }
 
     @Override public String getIdentifier() { return "statify"; }
@@ -60,6 +61,7 @@ public final class StatifyExpansion extends PlaceholderExpansion {
             case "name": return player.getName() == null ? "" : player.getName();
             case "uuid": return id.toString();
             case "server": return localServer;
+            case "ip": return resolveIp(id);
         }
 
         if (key.startsWith("top_")) {
@@ -202,6 +204,34 @@ public final class StatifyExpansion extends PlaceholderExpansion {
 
     private String format(long seconds) {
         return durationFormat.format(seconds);
+    }
+
+    private final ConcurrentHashMap<UUID, CachedIp> ipCache = new ConcurrentHashMap<>();
+
+    private String resolveIp(UUID id) {
+        long now = System.currentTimeMillis();
+        CachedIp c = ipCache.get(id);
+        if (c != null && now - c.timestamp < CACHE_TTL_MS) {
+            return c.value == null ? "" : c.value;
+        }
+        try {
+            String ip = database.getLastIp(id);
+            ipCache.put(id, new CachedIp(ip, now));
+            return ip == null ? "" : ip;
+        } catch (SQLException ex) {
+            plugin.getLogger().log(Level.WARNING, "Statify: ip query failed for " + id, ex);
+            return c == null ? "" : (c.value == null ? "" : c.value);
+        }
+    }
+
+    private static final class CachedIp {
+        final String value;
+        final long timestamp;
+
+        CachedIp(String value, long timestamp) {
+            this.value = value;
+            this.timestamp = timestamp;
+        }
     }
 
     @FunctionalInterface
