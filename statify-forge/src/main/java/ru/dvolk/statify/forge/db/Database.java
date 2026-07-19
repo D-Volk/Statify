@@ -28,14 +28,10 @@ public final class Database {
 
     public void connect() throws SQLException {
         HikariConfig hc = new HikariConfig();
-        String jdbc;
-        if (config.getDatabaseType() == DatabaseType.MARIADB) {
-            jdbc = "jdbc:mariadb://" + config.getHost() + ":" + config.getPort() + "/" + config.getDatabase();
-            hc.setDriverClassName("org.mariadb.jdbc.Driver");
-        } else {
-            jdbc = "jdbc:mysql://" + config.getHost() + ":" + config.getPort() + "/" + config.getDatabase();
-            hc.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        }
+        // На Forge shaded только mariadb-connector (умеет и MySQL, и MariaDB),
+        // поэтому type=mysql в конфиге маппим в тот же драйвер.
+        String jdbc = "jdbc:mariadb://" + config.getHost() + ":" + config.getPort() + "/" + config.getDatabase();
+        hc.setDriverClassName("org.mariadb.jdbc.Driver");
         jdbc += "?useSSL=" + config.isUseSsl()
                 + "&useUnicode=true&characterEncoding=utf8"
                 + "&serverTimezone=UTC&allowPublicKeyRetrieval=true";

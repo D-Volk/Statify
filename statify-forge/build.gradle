@@ -30,14 +30,24 @@ configurations {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.1-47.3.11'
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.10'
 
-    // Shaded runtime deps
-    shade 'com.zaxxer:HikariCP:5.1.0'
-    shade 'org.mariadb.jdbc:mariadb-java-client:3.3.3'
-    shade 'com.mysql:mysql-connector-j:8.4.0'
+    // Shaded runtime deps.
+    // MariaDB Connector/J умеет работать и с MySQL (совместимый wire-протокол),
+    // поэтому mysql-connector-j не тащим — экономим ~2 МБ и половину класс-графа.
+    shade('com.zaxxer:HikariCP:5.1.0') {
+        exclude group: 'org.slf4j'
+    }
+    shade('org.mariadb.jdbc:mariadb-java-client:3.3.3') {
+        // Исключаем транзитивы, которые пересекаются с классами Forge/JDK
+        // и ломают JPMS module resolution:
+        //   - slf4j — уже в Forge как отдельный модуль
+        //   - waffle-jna и net.java.dev.jna — Windows auth, для нас не нужен
+        exclude group: 'org.slf4j'
+        exclude group: 'com.github.waffle'
+        exclude group: 'net.java.dev.jna'
+    }
     shade 'org.yaml:snakeyaml:2.2'
-    shade 'org.slf4j:slf4j-api:2.0.13'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -72,9 +82,13 @@ tasks.shadowJar {
     def shadeBase = 'ru.dvolk.statify.forge.libs'
     relocate 'com.zaxxer.hikari', "${shadeBase}.hikari"
     relocate 'org.mariadb.jdbc', "${shadeBase}.mariadb"
-    relocate 'com.mysql', "${shadeBase}.mysql"
-    relocate 'com.google.protobuf', "${shadeBase}.protobuf"
     relocate 'org.yaml.snakeyaml', "${shadeBase}.snakeyaml"
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'module-info.class'
+    exclude 'META-INF/versions/**/module-info.class'
     finalizedBy 'reobfShadowJar'
 }
 
