@@ -59,6 +59,7 @@ public final class Database {
                 + " name VARCHAR(32) NOT NULL,"
                 + " last_seen BIGINT NOT NULL,"
                 + " last_server VARCHAR(64) NULL,"
+                + " last_ip VARCHAR(45) NULL,"
                 + " PRIMARY KEY (uuid),"
                 + " INDEX idx_name (name)"
                 + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -67,24 +68,17 @@ public final class Database {
             st.executeUpdate(players);
         }
 
-        addLastServerColumnIfMissing();
+        addColumnIfMissing("last_server", "VARCHAR(64) NULL");
+        addColumnIfMissing("last_ip", "VARCHAR(45) NULL");
     }
 
-    /**
-     * Таблица statify_players создаётся paper/fabric-плагинами без колонки last_server.
-     * Добавляем колонку постфактум, если её ещё нет. Работает и на MySQL, и на MariaDB.
-     */
-    private void addLastServerColumnIfMissing() throws SQLException {
-        try (Connection c = dataSource.getConnection()) {
-            boolean exists = false;
-            try (ResultSet rs = c.getMetaData().getColumns(c.getCatalog(), null, "statify_players", "last_server")) {
-                exists = rs.next();
-            }
-            if (exists) return;
-            try (Statement st = c.createStatement()) {
-                st.executeUpdate("ALTER TABLE statify_players ADD COLUMN last_server VARCHAR(64) NULL");
-                logger.info("В таблицу statify_players добавлена колонка last_server.");
-            }
+    private void addColumnIfMissing(String column, String definition) throws SQLException {
+        String sql = "ALTER TABLE statify_players ADD COLUMN " + column + " " + definition;
+        try (Connection c = dataSource.getConnection(); Statement st = c.createStatement()) {
+            st.executeUpdate(sql);
+            logger.info("В таблицу statify_players добавлена колонка {}.", column);
+        } catch (SQLException ex) {
+            if (ex.getErrorCode() != 1060) throw ex;
         }
     }
 
@@ -98,14 +92,15 @@ public final class Database {
      * Записывает последний сервер игрока и обновляет last_seen/name.
      * Одним запросом, чтобы не терять запись если строки ещё нет.
      */
-    public void setLastServer(UUID uuid, String name, String server) throws SQLException {
-        String sql = "INSERT INTO statify_players(uuid, name, last_seen, last_server) VALUES(?,?,?,?) "
-                + "ON DUPLICATE KEY UPDATE name=VALUES(name), last_seen=VALUES(last_seen), last_server=VALUES(last_server)";
+    public void setLastServer(UUID uuid, String name, String server, String ip) throws SQLException {
+        String sql = "INSERT INTO statify_players(uuid, name, last_seen, last_server, last_ip) VALUES(?,?,?,?,?) "
+                + "ON DUPLICATE KEY UPDATE name=VALUES(name), last_seen=VALUES(last_seen), last_server=VALUES(last_server), last_ip=VALUES(last_ip)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, name);
             ps.setLong(3, Instant.now().getEpochSecond());
             ps.setString(4, server);
+            ps.setString(5, ip);
             ps.executeUpdate();
         }
     }

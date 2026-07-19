@@ -94,7 +94,7 @@ public final class StatifyCommand {
             }
             try {
                 // Пишем пустую строку как last_server. Логика редиректа игнорирует null/empty.
-                database.setLastServer(op.get().getUniqueId(), op.get().getUsername(), "");
+                database.setLastServer(op.get().getUniqueId(), op.get().getUsername(), "", null);
                 send(source, "§aЗаписи last_server для " + playerName + " сброшены.");
             } catch (Exception ex) {
                 send(source, "§cОшибка: " + ex.getMessage());

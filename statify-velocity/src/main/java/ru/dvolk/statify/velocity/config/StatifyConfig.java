@@ -41,7 +41,18 @@ public final class StatifyConfig {
             + "  # 0 = не проверять, доверять try самой Velocity в fallback.\n"
             + "  ping-timeout-ms: 1500\n"
             + "  # Серверы, на которые НЕЛЬЗЯ редиректить (напр. лобби-only). Пусто — редирект везде.\n"
-            + "  blacklist: []\n";
+            + "  blacklist: []\n"
+            + "\n"
+            + "# Роутинг по версии клиента. Если игрок заходит с указанной версией MC,\n"
+            + "# он ВСЕГДА попадает на этот сервер (приоритет выше чем last_server).\n"
+            + "# Ключ — номер протокола. Популярные:\n"
+            + "#   765 = 1.20.4, 766 = 1.20.5/1.20.6, 767 = 1.21/1.21.1,\n"
+            + "#   768 = 1.21.2/1.21.3, 769 = 1.21.4\n"
+            + "# Если сервер недоступен — fallback на try из velocity.toml.\n"
+            + "version-routing: {}\n"
+            + "  # Пример:\n"
+            + "  # 765: 'survival-1-20-4'\n"
+            + "  # 767: 'survival-1-21'\n";
 
     private final Path configDir;
     private final Path configFile;
@@ -60,6 +71,8 @@ public final class StatifyConfig {
     private boolean redirectEnabled;
     private int pingTimeoutMs;
     private java.util.List<String> blacklist;
+    /** protocol version number → server name */
+    private java.util.Map<Integer, String> versionRouting;
 
     public StatifyConfig(Path configDir, String pluginVersion, Logger logger) {
         this.configDir = configDir;
@@ -151,6 +164,20 @@ public final class StatifyConfig {
             } else {
                 this.blacklist = java.util.List.of();
             }
+
+            Object vrNode = root.get("version-routing");
+            if (vrNode instanceof Map<?, ?> vrMap) {
+                java.util.Map<Integer, String> routing = new java.util.HashMap<>();
+                for (Map.Entry<?, ?> e : vrMap.entrySet()) {
+                    int protocol = intVal(e.getKey(), -1);
+                    if (protocol <= 0) continue;
+                    String serverName = str(e.getValue(), "");
+                    if (!serverName.isEmpty()) routing.put(protocol, serverName);
+                }
+                this.versionRouting = java.util.Map.copyOf(routing);
+            } else {
+                this.versionRouting = java.util.Map.of();
+            }
         }
     }
 
@@ -176,4 +203,5 @@ public final class StatifyConfig {
     public boolean isRedirectEnabled() { return redirectEnabled; }
     public int getPingTimeoutMs() { return pingTimeoutMs; }
     public java.util.List<String> getBlacklist() { return blacklist; }
+    public java.util.Map<Integer, String> getVersionRouting() { return versionRouting; }
 }
